@@ -16,8 +16,11 @@
 package wellknown
 
 import (
+	"fmt"
 	v3 "github.com/google/gnostic/openapiv3"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"strconv"
+	"strings"
 )
 
 func NewStringSchema() *v3.SchemaOrReference {
@@ -51,17 +54,19 @@ func NewNumberSchema(format string) *v3.SchemaOrReference {
 }
 
 func NewEnumSchema(enum_type *string, field protoreflect.FieldDescriptor) *v3.SchemaOrReference {
-	schema := &v3.Schema{Format: "enum"}
+	schema := &v3.Schema{Format: "enum", Type: "integer"}
 	if enum_type != nil && *enum_type == "string" {
-		schema.Type = "string"
 		schema.Enum = make([]*v3.Any, 0, field.Enum().Values().Len())
 		for i := 0; i < field.Enum().Values().Len(); i++ {
+			enumVal := field.Enum().Values().Get(i)
+			if schema.Example == nil {
+				schema.Example = &v3.Any{Yaml: strconv.Itoa(int(enumVal.Number()))}
+			}
+			sl := field.ParentFile().SourceLocations().ByDescriptor(enumVal)
 			schema.Enum = append(schema.Enum, &v3.Any{
-				Yaml: string(field.Enum().Values().Get(i).Name()),
+				Yaml: fmt.Sprintf("%d：%s", enumVal.Number(), strings.TrimSpace(sl.LeadingComments)),
 			})
 		}
-	} else {
-		schema.Type = "integer"
 	}
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
