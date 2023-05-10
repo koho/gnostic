@@ -62,9 +62,12 @@ func NewEnumSchema(enum_type *string, field protoreflect.FieldDescriptor) *v3.Sc
 			if schema.Example == nil {
 				schema.Example = &v3.Any{Yaml: strconv.Itoa(int(enumVal.Number()))}
 			}
-			sl := field.ParentFile().SourceLocations().ByDescriptor(enumVal)
+			desc := strings.TrimSpace(enumVal.ParentFile().SourceLocations().ByDescriptor(enumVal).LeadingComments)
+			if desc == "" {
+				desc = string(enumVal.Name())
+			}
 			schema.Enum = append(schema.Enum, &v3.Any{
-				Yaml: fmt.Sprintf("%d：%s", enumVal.Number(), strings.TrimSpace(sl.LeadingComments)),
+				Yaml: fmt.Sprintf("%d：%s", enumVal.Number(), desc),
 			})
 		}
 	}
